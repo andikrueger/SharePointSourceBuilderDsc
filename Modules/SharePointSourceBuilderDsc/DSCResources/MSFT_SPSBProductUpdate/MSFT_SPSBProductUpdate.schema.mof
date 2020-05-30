@@ -1,0 +1,9 @@
+[ClassVersion("1.0.0.0"), FriendlyName("SPSBProductUpdate")]
+class MSFT_SPSBProductUpdate : OMI_BaseResource
+{
+    [Key, Description("Specifies the resource is a single instance, the value must be 'Yes'"), ValueMap{"Yes"}, Values{"Yes"}] String IsSingleInstance;
+    [Required, Description("SharePoint Version")] UInt32 Version;
+    [Required, Description("Array of Patch Names")] String Patches[];
+    [Required, Description("Directory where to store the Patches")] String TargetDirectory;
+    [Write, Description("Present to download the SharePoint Patch files. Absent is currently not supported"), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] string Ensure;
+};

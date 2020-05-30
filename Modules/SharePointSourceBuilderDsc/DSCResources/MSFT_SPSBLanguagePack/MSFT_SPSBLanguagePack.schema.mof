@@ -1,0 +1,9 @@
+[ClassVersion("1.0.0.0"), FriendlyName("SPSBLanguagePack")]
+class MSFT_SPSBLanguagePack : OMI_BaseResource
+{
+    [Key, Description("Specifies the resource is a single instance, the value must be 'Yes'"), ValueMap{"Yes"}, Values{"Yes"}] String IsSingleInstance;
+    [Required, Description("SharePoint Version")] UInt32 Version;
+    [Required, Description("Array of Language Pack Codes")] String Languages[];
+    [Required, Description("Directory where to store the Language Packs")] String TargetDirecotry;
+    [Write, Description("Present to download the SharePoint Language Packs. Absent is currently not supported"), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] string Ensure;
+};
