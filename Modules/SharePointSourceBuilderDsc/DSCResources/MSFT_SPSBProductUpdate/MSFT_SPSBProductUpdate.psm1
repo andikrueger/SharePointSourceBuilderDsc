@@ -7,8 +7,9 @@ function Get-TargetRessource
         $IsSingleInstance,
 
         [Parameter(Mandatory = $true)]
-        [System.UInt32]
-        $Version,
+        [ValidateSet("SP2013", "ProjectServer2013", "SP2016", "SP2019")]
+        [System.String]
+        $ProductName,
 
         [Parameter(Mandatory = $true)]
         [System.String[]]
@@ -25,21 +26,23 @@ function Get-TargetRessource
     )
 
     $returnValue = @{
-        Version         = $Version
+        ProductName     = $ProductName
         Patches         = @()
         TargetDirectory = $TargetDirectory
         Ensure          = "Absent"
     }
 
-    if (-not(Test-Path $TargetDirectory))
+    $baseDirectory = Join-Path $TargetDirectory -ChildPath $ProductName
+
+    if (-not(Test-Path $baseDirectory))
     {
-        $returnValue.TargetDirectory = ""
+        $returnValue.TargetDirectory = $null
         return $returnValue
     }
     else
     {
-        $folders = Get-ChildItem $source -Directory
-        if (-not($null -eq $folders))
+        $folders = Get-ChildItem $baseDirectory -Directory
+        if (-not($null -eq $folders) -and $folders.Count -gt 0)
         {
             $returnValue.Ensure = "Present"
             $folders | ForEach-Object -Process {
@@ -59,8 +62,9 @@ function Set-TargetRessource
         $IsSingleInstance,
 
         [Parameter(Mandatory = $true)]
-        [System.UInt32]
-        $Version,
+        [ValidateSet("SP2013", "ProjectServer2013", "SP2016", "SP2019")]
+        [System.String]
+        $ProductName,
 
         [Parameter(Mandatory = $true)]
         [System.String[]]
@@ -78,9 +82,64 @@ function Set-TargetRessource
 
     $currentValues = Get-TargetRessource @PSBoundParameters
 
-    foreach ($patch in $Patches)
+    $baseDirectory = Join-Path $TargetDirectory -ChildPath $ProductName
+
+    if ($null -eq $currentValues.TargetDirectory)
     {
-        Write-Verbose "Processing $patch"
+        New-Item -Path $baseDirectory -ItemType Directory -Force
+    }
+
+    $differences = Compare-Object -ReferenceObject $currentValues.Patches `
+        -DifferenceObject $Patches
+
+    if ($null -eq $differences)
+    {
+        Write-Verbose -Message "Patches do match. No further processing required."
+    }
+    else
+    {
+        Write-Verbose -Message "Patches do not match. PErforming corrective action."
+        foreach ($difference in $differences)
+        {
+            $patch = $differences.InputObject
+
+            $path = Join-Path -Path $baseDirectory -ChildPath $patch
+
+            if (-not(Test-Path -Path $path))
+            {
+                New-Item -Path $path -ItemType Directory -Force
+            }
+
+            if ($difference.SideINdicator -eq "=>")
+            {
+                $patchDetails = Get-SPSBDscPatchDetail -ProductName $ProductName -PatchName $patch
+                if ($null -eq $patchDetails)
+                {
+                    Write-Warning -Message "There was no patch found for '$patch'"
+                    break
+                }
+
+                foreach ($patchDetail in $patchDetails)
+                {
+                    Start-SPSBDscFileTransfer -Destination $path -Source $patchDetail.Url -ExpandedFile $patchDetail.ExpandedFile
+                    $filePath = Join-Path -Path $path -ChildPath $languagePackDetail.ExpandedFile
+                    Remove-ReadOnlyAttribute -Path $filePath
+                }
+
+                foreach($patchDetail in $patchDetails)
+                {
+                    if($patchDetail.ExpandedFile.EndsWith(".exe"))
+                    {
+                        $sourcePath = Join-Path $path -ChildPath $patchDetail.ExpandedFile
+                        $targetPath = Join-Path $path -ChildPath "Patch"
+
+                        New-Item -Path $targetPath -ItemType Directory -Force
+
+                        Expand-SPSBDscPatchFileToFolder -SourcePath $sourcePath -TargetPath $targetPath
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -93,8 +152,9 @@ function Test-TargetRessource
         $IsSingleInstance,
 
         [Parameter(Mandatory = $true)]
-        [System.UInt32]
-        $Version,
+        [ValidateSet("SP2013", "ProjectServer2013", "SP2016", "SP2019")]
+        [System.String]
+        $ProductName,
 
         [Parameter(Mandatory = $true)]
         [System.String[]]

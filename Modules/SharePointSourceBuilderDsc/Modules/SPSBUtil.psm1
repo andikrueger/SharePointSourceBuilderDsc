@@ -1,3 +1,21 @@
+function Expand-SPSBDscPatchFileToFolder{
+    [CmdletBinding()]
+    param (
+        # Source Path to copy files from
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]
+        $SourcePath,
+
+        # Target Path to copy files to
+        [Parameter(Mandatory = $true)]
+        [String]
+        $TargetPath
+    )
+
+    Start-Process -FilePath "$SourcePath" -ArgumentList "/extract:`"$TargetPath`" /passive" -Wait -NoNewWindow
+}
+
 function Copy-SPSBDscImageFilesToFolder
 {
     [CmdletBinding()]
@@ -73,7 +91,6 @@ Function Remove-ReadOnlyAttribute
 
 function Start-SPSBDscFileTransfer
 {
-    [CmdletBinding()]
     [CmdletBinding()]
     param(
         # Destination folder
@@ -157,21 +174,22 @@ function Get-SPSBDscPatchDetail
         # SharePoint Version Number
         [Parameter(Mandatory = $true)]
         [Int]
-        $SharePointVersion,
+        $ProductName,
 
         # Patch Name
         [Parameter(Mandatory = $true)]
         [string]
-        $SharePointPatchName
+        $PatchName
     )
 
     $autoSpSourceBuilderXml = Get-AutoSPSourceBuilderXml
 
     $productNode = $autoSpSourceBuilderXml.Products.Product | Where-Object -FilterScript {
-        $_.Name -eq "SP$($SharePointVersion)"
+        $_.Name -eq $ProductName
     }
+
     $cumulativeUpdates = $productNode.CumulativeUpdates.CumulativeUpdate | Where-Object -FilterScript {
-        $_.Name -eq "$($SharePointPatchName)"
+        $_.Name -eq $SharePointPatchName
     }
 
     $returnValue = @()
@@ -197,12 +215,12 @@ function Get-SPSBDscPatchDetail
 function Get-SPSBDscLanguagePackDetail
 {
     [CmdletBinding()]
-    [OutputType([System.String])]
+    [OutputType([System.Collections.Hashtable])]
     param(
         # SharePoint Version Number
         [Parameter(Mandatory = $true)]
-        [System.Int32]
-        $SharePointVersion,
+        [System.String]
+        $ProductName,
 
         # Language like "de-de"
         [Parameter(Mandatory = $true)]
@@ -213,20 +231,26 @@ function Get-SPSBDscLanguagePackDetail
     $autoSpSourceBuilderXml = Get-AutoSPSourceBuilderXml
 
     $productNode = $autoSpSourceBuilderXml.Products.Product | Where-Object -FilterScript {
-        $_.Name -eq "SP$($SharePointVersion)"
+        $_.Name -eq $SharePointVersion
     }
+
     $languagePack = $productNode.LanguagePacks.LanguagePack | Where-Object -FilterScript {
-        $_.Name -eq "$($Language)"
+        $_.Name -eq $Language
     }
 
     try
     {
         $urlSegments = $languagePack.Url.Split('/')
-        return $urlSegments[$urlSegments.Count - 1]
+
+        $returnValue += @{
+            Url          = $languagePack.Url
+            ExpandedFile = $urlSegments[$urlSegments.Count - 1]
+        }
+        return $returnValue
     }
     catch
     {
-        return ""
+        return $null
     }
 
 }

@@ -2,7 +2,7 @@
 class MSFT_SPSBProductUpdate : OMI_BaseResource
 {
     [Key, Description("Specifies the resource is a single instance, the value must be 'Yes'"), ValueMap{"Yes"}, Values{"Yes"}] String IsSingleInstance;
-    [Required, Description("SharePoint Version")] UInt32 Version;
+    [Required, Description("Product Name, e.g. 'SP2016'"), ValueMap{"SP2013", "ProjectServer2013", "SP2016", "SP2019"}, Values{"SP2013", "ProjectServer2013", "SP2016", "SP2019"}] String ProductName;
     [Required, Description("Array of Patch Names")] String Patches[];
     [Required, Description("Directory where to store the Patches")] String TargetDirectory;
     [Write, Description("Present to download the SharePoint Patch files. Absent is currently not supported"), ValueMap{"Present","Absent"}, Values{"Present","Absent"}] string Ensure;
