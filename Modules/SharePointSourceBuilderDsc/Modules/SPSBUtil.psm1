@@ -1,4 +1,5 @@
-function Expand-SPSBDscPatchFileToFolder{
+function Expand-SPSBDscPatchFileToFolder
+{
     [CmdletBinding()]
     param (
         # Source Path to copy files from

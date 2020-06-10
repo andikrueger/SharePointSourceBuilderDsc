@@ -126,9 +126,9 @@ function Set-TargetRessource
                     Remove-ReadOnlyAttribute -Path $filePath
                 }
 
-                foreach($patchDetail in $patchDetails)
+                foreach ($patchDetail in $patchDetails)
                 {
-                    if($patchDetail.ExpandedFile.EndsWith(".exe"))
+                    if ($patchDetail.ExpandedFile.EndsWith(".exe"))
                     {
                         $sourcePath = Join-Path $path -ChildPath $patchDetail.ExpandedFile
                         $targetPath = Join-Path $path -ChildPath "Patch"
